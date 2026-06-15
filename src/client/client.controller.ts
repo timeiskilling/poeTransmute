@@ -40,3 +40,6 @@ export class ClientController {
     return this.clientService.remove(+id);
   }
 }
+
+@Controller('price')
+export class PriceController {}
