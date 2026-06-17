@@ -2,9 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-
 import * as schema from './schema';
-import { RootConfig } from '../config/configuration.types'; // Імпортуємо новий кореневий тип
+import { RootConfig } from '../config/configuration.types';
 
 export const DRIZZLE = Symbol('DRIZZLE_CONNECTION');
 
@@ -32,7 +31,7 @@ export const DRIZZLE = Symbol('DRIZZLE_CONNECTION');
         try {
           await queryClient`SELECT 1`;
         } catch (error) {
-          console.error('Failed to connect to the database on startup!');
+          console.error('Failed to connect to the database on startup');
           throw error;
         }
         return drizzle(queryClient, { schema });
