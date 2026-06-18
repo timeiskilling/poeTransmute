@@ -1,7 +1,10 @@
+import { z } from 'zod';
+import { CurrencyType, Poe2NinjaItemInsert } from '../db/schema';
+
 export interface Root {
   core: Core;
   lines: Line[];
-  items: Items[];
+  items: Poe2NinjaItem[];
 }
 
 export interface Core {
@@ -38,10 +41,32 @@ export interface Sparkline {
   data: number[];
 }
 
-export interface Items {
+export interface Poe2NinjaItem {
   id: string;
   name: string;
   image: string;
   category: string;
   detailsId: string;
 }
+
+export interface Poe2NinjaResponse {
+  items: Poe2NinjaItem[];
+}
+
+export const createItemParser = (type: CurrencyType, baseUrl: string) =>
+  z
+    .object({
+      name: z.string(),
+      image: z.string(),
+      category: z.string(),
+      detailsId: z.string(),
+    })
+    .transform(
+      (raw): Poe2NinjaItemInsert => ({
+        type,
+        name: raw.name,
+        image: `${baseUrl}${raw.image}`,
+        category: raw.category,
+        detailsId: raw.detailsId,
+      }),
+    );

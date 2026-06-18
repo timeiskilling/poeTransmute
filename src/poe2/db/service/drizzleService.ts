@@ -1,10 +1,11 @@
 import { Injectable, Inject, HttpStatus } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DRIZZLE } from '../database.module';
-import * as schema from '../schema';
+import { items, CurrencyType } from '../schema';
+import { eq, InferInsertModel } from 'drizzle-orm';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
 import { asc, desc, Column, InferSelectModel } from 'drizzle-orm';
-import { PgTable } from 'drizzle-orm/pg-core';
+import * as schema from '../schema';
 
 @Injectable()
 export class DrizzleService {
@@ -16,32 +17,47 @@ export class DrizzleService {
     return this.db;
   }
 
-  async getItems<TTable extends PgTable<any>>(
-    table: TTable,
-    entityName: string,
-    sortBy?: keyof TTable['_']['columns'],
+  async insertItems(itemsArray: InferInsertModel<typeof items>[]) {
+    const promise = this.db.insert(items).values(itemsArray);
+
+    return await runPromiseExecution(promise)
+      .catchError('Internal database error', HttpStatus.INTERNAL_SERVER_ERROR)
+      .execute();
+  }
+
+  async getItems(
+    itemType: CurrencyType,
+    sortBy?: keyof typeof items._.columns,
     dir: 'asc' | 'desc' = 'asc',
   ) {
     const column = sortBy
-      ? ((table as Record<string, unknown>)[sortBy as string] as Column)
+      ? (items[sortBy as keyof typeof items] as Column)
       : undefined;
 
     let query = this.db
       .select()
-      .from(table as any)
+      .from(items)
+      .where(eq(items.type, itemType))
       .$dynamic();
 
     if (column) {
       query = query.orderBy(dir === 'desc' ? desc(column) : asc(column));
     }
 
-    const promise = query as unknown as Promise<InferSelectModel<TTable>[]>;
+    const promise = query as unknown as Promise<
+      InferSelectModel<typeof items>[]
+    >;
 
     return await runPromiseExecution(promise)
       .catchError('Internal database error', HttpStatus.INTERNAL_SERVER_ERROR)
-      .throwIfEmptyArray(
-        `No ${entityName.toLowerCase()} found`,
-        HttpStatus.NOT_FOUND,
-      );
+      .throwIfEmptyArray(`No items of type found`, HttpStatus.NOT_FOUND);
+  }
+
+  async getExistingItemTypes(): Promise<string[]> {
+    const result = await this.db
+      .selectDistinct({ type: items.type })
+      .from(items);
+
+    return result.map((row) => row.type);
   }
 }

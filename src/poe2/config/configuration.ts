@@ -13,4 +13,11 @@ export default () => ({
     host: process.env.REDIS_HOST,
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
   },
+  poe2: {
+    ninjaApiUrl:
+      process.env.POE_NINJA_API_URL ||
+      'https://poe.ninja/poe2/api/economy/exchange/current/overview',
+    league: process.env.POE_LEAGUE || 'Runes of Aldur',
+    imageBaseUrl: process.env.POE_IMAGE_BASE_URL || 'https://web.poecdn.com',
+  },
 });
