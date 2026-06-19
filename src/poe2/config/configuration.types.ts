@@ -14,7 +14,11 @@ export type RedisConfig = {
 };
 
 export interface Poe2Config {
-  ninjaApiUrl: string;
+  ninjaApiRootUrl: string;
+  ninjaStashBase: string;
+  ninjaExchangeBase: string;
+  ninjaExchangeItemHistory: string;
+  ninjaStashItemHistory: string;
   league: string;
   imageBaseUrl: string;
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CurrencyType, Poe2NinjaItemInsert } from '../db/schema';
+import { ItemType, Poe2NinjaItemInsert } from '../db/schema';
 
 export interface Root {
   core: Core;
@@ -53,7 +53,11 @@ export interface Poe2NinjaResponse {
   items: Poe2NinjaItem[];
 }
 
-export const createItemParser = (type: CurrencyType, baseUrl: string) =>
+export interface LineItem {
+  lines: Line[];
+}
+
+export const createItemParser = (type: ItemType, baseUrl: string) =>
   z
     .object({
       name: z.string(),

@@ -8,12 +8,21 @@ import {
   createItemParser,
   Poe2NinjaResponse,
 } from 'src/poe2/poe2NinjaDto/currency';
-import { Poe2NinjaItemInsert } from '../schema';
+import { ItemType, Poe2NinjaItemInsert } from '../schema';
 import { runPromisesExecution } from 'src/promiseManager/promiseExecution';
+import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
 
 @Injectable()
 export class InitializeService implements OnModuleInit {
   private readonly logger = new Logger(InitializeService.name);
+
+  private readonly retryConfig: RetryOptions = {
+    maxRetries: 3,
+    initialDelayMs: 1000,
+    backoffFactor: 2,
+    retryableStatuses: [429, 500, 502, 503, 504],
+  };
+
   constructor(
     private readonly httpService: HttpService,
     private readonly drizzleService: DrizzleService,
@@ -22,15 +31,36 @@ export class InitializeService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('The database state checks ...');
-    const allPossibleTypes = schema.currencyTypeEnum.enumValues;
 
     const existingsTypes = await this.drizzleService.getExistingItemTypes();
+    const poeConfig = this.configService.getOrThrow('poe2', { infer: true });
 
-    const missingTypes = allPossibleTypes.filter(
+    const promises: Promise<any>[] = [];
+
+    const missingCurrencyTypes = schema.CURRENCY_TYPES.filter(
       (type) => !existingsTypes.includes(type),
     );
 
-    if (missingTypes.length === 0) {
+    missingCurrencyTypes.forEach((type) => {
+      promises.push(
+        this.fetchAndInitDataForType(type, poeConfig.ninjaExchangeBase),
+      );
+    });
+
+    const missingStashTypes = schema.STASH_TYPES.filter(
+      (type) => !existingsTypes.includes(type),
+    );
+
+    missingStashTypes.forEach((type) => {
+      promises.push(
+        this.fetchAndInitDataForType(type, poeConfig.ninjaStashBase),
+      );
+    });
+
+    const totalMissingCount =
+      missingCurrencyTypes.length + missingStashTypes.length;
+
+    if (totalMissingCount === 0) {
       this.logger.log(
         'The data already exists in the database. Skipping initialization.',
       );
@@ -38,39 +68,44 @@ export class InitializeService implements OnModuleInit {
     }
 
     this.logger.log(
-      `The following types are missing: ${missingTypes.join(', ')}`,
-    );
-
-    const promises = missingTypes.map((type) =>
-      this.fetchAndInitDataForType(type),
+      `Fetching missing types. Currency: ${missingCurrencyTypes.length}, Stash: ${missingStashTypes.length}`,
     );
 
     const results = await runPromisesExecution(promises)
       .catchError('Err at intitialisating the part of data')
       .executeAllSettled();
 
-    this.logger.log(`success: ${results.length} type of data`);
+    this.logger.log(`Success: ${results.length} types of data processed`);
   }
 
-  private async fetchAndInitDataForType(type: string): Promise<any> {
+  private async fetchAndInitDataForType(
+    type: string,
+    itemsBase: string,
+  ): Promise<any> {
     this.logger.log(`Loading data for type: ${type}...`);
 
     const poeConfig = this.configService.getOrThrow('poe2', { infer: true });
-    const url = `${poeConfig.ninjaApiUrl}?league=${encodeURIComponent(poeConfig.league)}&type=${type}`;
+    const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${type}`;
 
-    const rawItems = (
-      await this.httpService.axiosRef.get<Poe2NinjaResponse>(url)
-    ).data.items;
+    const randomDelay = Math.random() * 1000;
+    const response = await withRetry(
+      () => this.httpService.axiosRef.get<Poe2NinjaResponse>(url),
+      {
+        ...this.retryConfig,
+        initialDelayMs: this.retryConfig.initialDelayMs + randomDelay,
+      },
+      this.logger,
+      `Fetch ${type}`,
+    );
+
+    const rawItems = response.data.items;
 
     if (!rawItems || rawItems.length === 0) {
       this.logger.warn(`API returned empty items array for type: ${type}`);
       return { type, status: 'skipped', reason: 'empty_data' };
     }
 
-    const parser = createItemParser(
-      type as schema.CurrencyType,
-      poeConfig.imageBaseUrl,
-    );
+    const parser = createItemParser(type as ItemType, poeConfig.imageBaseUrl);
 
     const formatedTypes: Poe2NinjaItemInsert[] = rawItems.map((raw) =>
       parser.parse(raw),

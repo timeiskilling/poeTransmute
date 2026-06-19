@@ -1,7 +1,7 @@
 import { Injectable, Inject, HttpStatus } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DRIZZLE } from '../database.module';
-import { items, CurrencyType } from '../schema';
+import { items, ItemType } from '../schema';
 import { eq, InferInsertModel } from 'drizzle-orm';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
 import { asc, desc, Column, InferSelectModel } from 'drizzle-orm';
@@ -26,7 +26,7 @@ export class DrizzleService {
   }
 
   async getItems(
-    itemType: CurrencyType,
+    itemType: ItemType,
     sortBy?: keyof typeof items._.columns,
     dir: 'asc' | 'desc' = 'asc',
   ) {

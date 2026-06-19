@@ -7,3 +7,6 @@ async function bootstrap() {
 }
 
 void bootstrap();
+
+//https://poe.ninja/poe2/api/economy/exchange/current/details?league=Runes+of+Aldur&type=Currency&id=divine-orb
+//https://poe.ninja/poe2/api/economy/exchange/current/overview?league=Runes+of+Aldur&type=Currency

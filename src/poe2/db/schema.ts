@@ -7,7 +7,7 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 
-export const currencyTypeEnum = pgEnum('currency_type', [
+export const CURRENCY_TYPES = [
   'Currency',
   'Breach',
   'Abyss',
@@ -17,12 +17,33 @@ export const currencyTypeEnum = pgEnum('currency_type', [
   'Runes',
   'UncutGems',
   'Essences',
+  'LineageSupportGems',
+  'SoulCores',
+  'Fragments',
+  'Idols',
+] as const;
+
+export const STASH_TYPES = [
+  'UniqueWeapon',
+  'UniqueArmour',
+  'UniqueAccessory',
+  'UniqueFlask',
+  'UniqueCharm',
+  'UniqueJewel',
+  'UniqueRelic',
+  'UniqueTablet',
+] as const;
+
+export const itemTypeEnum = pgEnum('item_type', [
+  ...CURRENCY_TYPES,
+  ...STASH_TYPES,
 ]);
-export type CurrencyType = (typeof currencyTypeEnum.enumValues)[number];
+
+export type ItemType = (typeof itemTypeEnum.enumValues)[number];
 
 export const items = pgTable('items', {
   id: uuid('id').defaultRandom().notNull(),
-  type: currencyTypeEnum('type').notNull(),
+  type: itemTypeEnum('type').notNull(),
   name: varchar('name', { length: 255 }).notNull(),
   image: text('image').notNull(),
   category: varchar('category', { length: 255 }).notNull(),
