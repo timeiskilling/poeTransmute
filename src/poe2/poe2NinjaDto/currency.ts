@@ -1,5 +1,4 @@
-import { z } from 'zod';
-import { ItemType, Poe2NinjaItemInsert } from '../db/schema';
+import { Line } from './zodParser';
 
 export interface Root {
   core: Core;
@@ -27,20 +26,6 @@ export interface Rates {
   chaos: number;
 }
 
-export interface Line {
-  id: string;
-  primaryValue: number;
-  volumePrimaryValue: number;
-  maxVolumeCurrency: string;
-  maxVolumeRate: number;
-  sparkline: Sparkline;
-}
-
-export interface Sparkline {
-  totalChange: number;
-  data: number[];
-}
-
 export interface Poe2NinjaItem {
   id: string;
   name: string;
@@ -52,25 +37,3 @@ export interface Poe2NinjaItem {
 export interface Poe2NinjaResponse {
   items: Poe2NinjaItem[];
 }
-
-export interface LineItem {
-  lines: Line[];
-}
-
-export const createItemParser = (type: ItemType, baseUrl: string) =>
-  z
-    .object({
-      name: z.string(),
-      image: z.string(),
-      category: z.string(),
-      detailsId: z.string(),
-    })
-    .transform(
-      (raw): Poe2NinjaItemInsert => ({
-        type,
-        name: raw.name,
-        image: `${baseUrl}${raw.image}`,
-        category: raw.category,
-        detailsId: raw.detailsId,
-      }),
-    );

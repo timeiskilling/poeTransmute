@@ -4,13 +4,11 @@ import { DrizzleService } from './drizzleService';
 import * as schema from '../schema';
 import { ConfigService } from '@nestjs/config';
 import { RootConfig } from 'src/poe2/config/configuration.types';
-import {
-  createItemParser,
-  Poe2NinjaResponse,
-} from 'src/poe2/poe2NinjaDto/currency';
+import { Poe2NinjaResponse } from 'src/poe2/poe2NinjaDto/currency';
 import { ItemType, Poe2NinjaItemInsert } from '../schema';
 import { runPromisesExecution } from 'src/promiseManager/promiseExecution';
 import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
+import { createItemParser } from 'src/poe2/poe2NinjaDto/zodParser';
 
 @Injectable()
 export class InitializeService implements OnModuleInit {

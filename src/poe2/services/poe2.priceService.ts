@@ -1,15 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { DrizzleService } from '../db/service/drizzleService';
-import { RootConfig } from '../config/configuration.types';
+import { Poe2Config, RootConfig } from '../config/configuration.types';
 import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
-import { LineItem } from '../poe2NinjaDto/currency';
 import { DetailPriceDto } from '../poe2NinjaDto/detailPriceDto';
+import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
+import {
+  Poe2NinjaItemLineResponse,
+  Poe2NinjaItemPairResponse,
+} from '../poe2NinjaDto/responseDto';
+import {
+  LineItem,
+  LineItemResponseSchema,
+  DetailPriceResponseSchema,
+} from '../poe2NinjaDto/zodParser';
 
 @Injectable()
 export class Poe2PricesService {
   private readonly logger = new Logger(Poe2PricesService.name);
+  private readonly poeConfig: Poe2Config;
 
   private readonly retryConfig: RetryOptions = {
     maxRetries: 3,
@@ -19,19 +28,33 @@ export class Poe2PricesService {
   };
   constructor(
     private readonly httpService: HttpService,
-    private readonly drizzleService: DrizzleService,
     private readonly configService: ConfigService<RootConfig>,
-  ) {}
+  ) {
+    this.poeConfig = this.configService.getOrThrow('poe2', { infer: true });
+  }
+
+  async getPricesForType(type: string, itemsBase: string) {
+    return await runPromiseExecution(this.fetchPricesForType(type, itemsBase))
+      .catchError(`Err at fetching the date of ${type}`)
+      .execute();
+  }
+
+  async getPricesForItem(itemId: string, itemsBase: string) {
+    return await runPromiseExecution(this.fetchPricesForItem(itemId, itemsBase))
+      .catchError(`Err at fetching the date of ${itemId}`)
+      .execute();
+  }
 
   private async fetchPricesForType(
     type: string,
     itemsBase: string,
-  ): Promise<any> {
+  ): Promise<Poe2NinjaItemLineResponse> {
     this.logger.log(`Loading data for type: ${type}...`);
 
-    const poeConfig = this.configService.getOrThrow('poe2', { infer: true });
-    const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${type}&id=`;
+    const poeConfig = this.poeConfig;
+    const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${type}`;
     const randomDelay = Math.random() * 1000;
+
     const response = await withRetry(
       () => this.httpService.axiosRef.get<LineItem>(url),
       {
@@ -42,11 +65,18 @@ export class Poe2PricesService {
       `Fetch ${type}`,
     );
 
-    const rawItems = response.data.lines;
+    const parsedData = LineItemResponseSchema.safeParse(response.data);
+
+    if (!parsedData.success) {
+      this.logger.error(`Invalid API response format for type: ${type}`);
+      return { type, status: 'error', reason: 'invalid_format' };
+    }
+
+    const rawItems = parsedData.data.lines;
 
     if (!rawItems || rawItems.length === 0) {
       this.logger.warn(`API returned empty items array for type: ${type}`);
-      return { type, status: 'skipped', reason: 'empty_data' };
+      return { type, status: 'error', reason: 'empty_data' };
     }
 
     return { type, status: 'success', count: rawItems.length, items: rawItems };
@@ -55,10 +85,10 @@ export class Poe2PricesService {
   private async fetchPricesForItem(
     itemId: string,
     itemsBase: string,
-  ): Promise<any> {
+  ): Promise<Poe2NinjaItemPairResponse> {
     this.logger.log(`Loading data for item: ${itemId}...`);
 
-    const poeConfig = this.configService.getOrThrow('poe2', { infer: true });
+    const poeConfig = this.poeConfig;
     const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${itemId}&id=${itemId}`;
     const randomDelay = Math.random() * 1000;
 
@@ -72,7 +102,14 @@ export class Poe2PricesService {
       `Fetch ${itemId}`,
     );
 
-    const rawItems = response.data.pairs;
+    const parsedData = DetailPriceResponseSchema.safeParse(response.data);
+
+    if (!parsedData.success) {
+      this.logger.error(`Invalid API response format for type: ${itemId}`);
+      return { itemId, status: 'error', reason: 'invalid_format' };
+    }
+
+    const rawItems = parsedData.data.pairs;
 
     if (!rawItems || rawItems.length === 0) {
       this.logger.warn(`API returned empty items array for item: ${itemId}`);

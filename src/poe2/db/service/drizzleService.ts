@@ -60,4 +60,14 @@ export class DrizzleService {
 
     return result.map((row) => row.type);
   }
+
+  async getItemType(itemId: string): Promise<ItemType> {
+    const result = await this.db
+      .select({ type: items.type })
+      .from(items)
+      .where(eq(items.detailsId, itemId))
+      .limit(1);
+
+    return result[0]?.type;
+  }
 }
