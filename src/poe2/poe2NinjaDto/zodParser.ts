@@ -7,12 +7,18 @@ export const SparklineSchema = z.object({
 });
 
 export const LineSchema = z.object({
-  id: z.string(),
+  id: z.union([z.string(), z.number()]).optional(),
+  name: z.string().optional(),
+  itemId: z.string().optional(),
+  detailsId: z.string().optional(),
+  icon: z.string().optional(),
+
   primaryValue: z.number().optional(),
   volumePrimaryValue: z.number().nullable().optional(),
   maxVolumeCurrency: z.string().nullable().optional(),
   maxVolumeRate: z.number().nullable().optional(),
-  sparkline: SparklineSchema.optional(),
+
+  sparkLine: SparklineSchema.optional(),
 });
 
 export const HistorySchema = z.object({
@@ -46,17 +52,26 @@ export type DetailPriceResponse = z.infer<typeof DetailPriceResponseSchema>;
 export const createItemParser = (type: ItemType, baseUrl: string) =>
   z
     .object({
-      name: z.string(),
-      image: z.string(),
-      category: z.string(),
+      name: z.string().optional(),
+      itemId: z.string().optional(),
+      image: z.string().optional(),
+      icon: z.string().optional(),
+      category: z.string().optional(),
       detailsId: z.string(),
     })
-    .transform(
-      (raw): Poe2NinjaItemInsert => ({
+    .transform((raw): Poe2NinjaItemInsert => {
+      const itemName = raw.name || raw.itemId || 'Unknown Item';
+
+      let itemImage = raw.image || raw.icon || '';
+      if (itemImage && !itemImage.startsWith('http')) {
+        itemImage = `${baseUrl}${itemImage}`;
+      }
+
+      return {
         type,
-        name: raw.name,
-        image: `${baseUrl}${raw.image}`,
-        category: raw.category,
+        name: itemName,
+        image: itemImage,
+        category: raw.category || 'Unknown',
         detailsId: raw.detailsId,
-      }),
-    );
+      };
+    });

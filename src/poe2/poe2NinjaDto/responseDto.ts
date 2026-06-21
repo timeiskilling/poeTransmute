@@ -8,3 +8,12 @@ export type Poe2NinjaItemPairResponse =
 export type Poe2NinjaItemLineResponse =
   | { type: string; status: 'success'; count: number; items: Line[] }
   | { type: string; status: 'error' | 'skipped'; reason: string };
+
+export interface PoeNinjaDynamicResponse {
+  lines?: any[];
+  items?: any[];
+  core?: {
+    items?: any[];
+  };
+  [key: string]: unknown;
+}

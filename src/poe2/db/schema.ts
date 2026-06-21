@@ -24,14 +24,14 @@ export const CURRENCY_TYPES = [
 ] as const;
 
 export const STASH_TYPES = [
-  'UniqueWeapon',
-  'UniqueArmour',
-  'UniqueAccessory',
-  'UniqueFlask',
-  'UniqueCharm',
-  'UniqueJewel',
-  'UniqueRelic',
-  'UniqueTablet',
+  'UniqueWeapons',
+  'UniqueArmours',
+  'UniqueAccessories',
+  'UniqueFlasks',
+  'UniqueCharms',
+  'UniqueJewels',
+  'UniqueSanctumRelics',
+  'UniqueTablets',
 ] as const;
 
 export const itemTypeEnum = pgEnum('item_type', [

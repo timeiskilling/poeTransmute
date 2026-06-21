@@ -1,6 +1,6 @@
 import { Injectable, Inject, HttpStatus } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { DRIZZLE } from '../database.module';
+import { DRIZZLE } from '../database.constants';
 import { items, ItemType } from '../schema';
 import { eq, InferInsertModel } from 'drizzle-orm';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';

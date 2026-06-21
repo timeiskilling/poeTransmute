@@ -4,11 +4,11 @@ import { DrizzleService } from './drizzleService';
 import * as schema from '../schema';
 import { ConfigService } from '@nestjs/config';
 import { RootConfig } from 'src/poe2/config/configuration.types';
-import { Poe2NinjaResponse } from 'src/poe2/poe2NinjaDto/currency';
 import { ItemType, Poe2NinjaItemInsert } from '../schema';
 import { runPromisesExecution } from 'src/promiseManager/promiseExecution';
 import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
 import { createItemParser } from 'src/poe2/poe2NinjaDto/zodParser';
+import { PoeNinjaDynamicResponse } from 'src/poe2/poe2NinjaDto/responseDto';
 
 @Injectable()
 export class InitializeService implements OnModuleInit {
@@ -85,9 +85,11 @@ export class InitializeService implements OnModuleInit {
     const poeConfig = this.configService.getOrThrow('poe2', { infer: true });
     const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${type}`;
 
-    const randomDelay = Math.random() * 1000;
+    this.logger.log(`Checking URL: ${url}`);
+    const randomDelay = Math.random() * 4000;
+
     const response = await withRetry(
-      () => this.httpService.axiosRef.get<Poe2NinjaResponse>(url),
+      () => this.httpService.axiosRef.get<unknown>(url),
       {
         ...this.retryConfig,
         initialDelayMs: this.retryConfig.initialDelayMs + randomDelay,
@@ -96,21 +98,39 @@ export class InitializeService implements OnModuleInit {
       `Fetch ${type}`,
     );
 
-    const rawItems = response.data.items;
+    if (typeof response.data === 'object' && response.data !== null) {
+      this.logger.log(
+        `Response keys for ${type}: ${Object.keys(response.data).join(', ')}`,
+      );
+    }
 
-    if (!rawItems || rawItems.length === 0) {
+    const data = response.data as PoeNinjaDynamicResponse;
+    let rawItems: unknown[] = [];
+
+    if (Array.isArray(data.lines) && data.lines.length > 0) {
+      rawItems = data.lines;
+    } else if (Array.isArray(data.items) && data.items.length > 0) {
+      rawItems = data.items;
+    }
+
+    if (rawItems.length === 0) {
       this.logger.warn(`API returned empty items array for type: ${type}`);
       return { type, status: 'skipped', reason: 'empty_data' };
     }
 
     const parser = createItemParser(type as ItemType, poeConfig.imageBaseUrl);
 
-    const formatedTypes: Poe2NinjaItemInsert[] = rawItems.map((raw) =>
-      parser.parse(raw),
-    );
+    try {
+      const formatedTypes: Poe2NinjaItemInsert[] = rawItems.map(
+        (raw: unknown) => parser.parse(raw),
+      );
 
-    await this.drizzleService.insertItems(formatedTypes);
+      await this.drizzleService.insertItems(formatedTypes);
 
-    return { type, status: 'success', count: formatedTypes.length };
+      return { type, status: 'success', count: formatedTypes.length };
+    } catch (parseError) {
+      this.logger.error(`Failed to parse data for type ${type}:`, parseError);
+      return { type, status: 'error', reason: 'parse_failed' };
+    }
   }
 }

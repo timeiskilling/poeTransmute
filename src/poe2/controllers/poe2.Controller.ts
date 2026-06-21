@@ -58,7 +58,7 @@ export class Poe2Controller {
     const promise = this.drizzleService.getItemType(itemId);
     const type = await runPromiseExecution(promise)
       .catchError('Failed serch item type')
-      .throwIfEmptyArray('Item not found', HttpStatus.NOT_FOUND);
+      .throwIfNullish('Item not found', HttpStatus.NOT_FOUND);
 
     const isCurrency = (CURRENCY_TYPES as readonly string[]).includes(type);
 
@@ -66,13 +66,15 @@ export class Poe2Controller {
 
     if (isCurrency) {
       return await this.poe2PriceService.getPricesForItem(
-        type,
+        itemId,
         this.poeConfig.ninjaExchangeItemHistory,
+        type,
       );
     } else if (isStash) {
       return await this.poe2PriceService.getPricesForItem(
-        type,
+        itemId,
         this.poeConfig.ninjaStashItemHistory,
+        type,
       );
     } else {
       throw new BadRequestException(

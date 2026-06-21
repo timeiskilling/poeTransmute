@@ -4,12 +4,17 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 import { RootConfig } from '../config/configuration.types';
-
-export const DRIZZLE = Symbol('DRIZZLE_CONNECTION');
+import { DrizzleService } from './service/drizzleService';
+import { DRIZZLE } from './database.constants';
+import { InitializeService } from './service/initialiseService';
+import { HttpModule } from '@nestjs/axios';
 
 @Global()
 @Module({
+  imports: [HttpModule],
   providers: [
+    DrizzleService,
+    InitializeService,
     {
       provide: DRIZZLE,
       inject: [ConfigService],
@@ -20,11 +25,22 @@ export const DRIZZLE = Symbol('DRIZZLE_CONNECTION');
           throw new Error('Database configuration is missing');
         }
 
+        console.log('--- DB CONFIG CHECK ---');
+        console.log('Target Database:', dbConfig.database);
+        console.log('Target User:', dbConfig.user);
+
+        if (dbConfig.database !== 'exile') {
+          throw new Error(
+            `CRITICAL: Tried to connect to wrong database: ${dbConfig.database}. Expected: exile`,
+          );
+        }
+
         const queryClient = postgres({
           host: dbConfig.host,
           port: dbConfig.port,
           username: dbConfig.user,
           password: dbConfig.password,
+          database: dbConfig.database,
           max: dbConfig.connectionPool.max,
         });
 
@@ -38,6 +54,6 @@ export const DRIZZLE = Symbol('DRIZZLE_CONNECTION');
       },
     },
   ],
-  exports: [],
+  exports: [DRIZZLE, DrizzleService],
 })
 export class DatabaseModule {}

@@ -5,6 +5,7 @@ export default () => ({
     port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
     user: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASSWORD,
+    database: process.env.POSTGRES_DATABASE,
     connectionPool: {
       max: parseInt(process.env.POSTGRES_MAX_CONNECTIONS || '10', 10),
     },

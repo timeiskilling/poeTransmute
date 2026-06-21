@@ -1,6 +1,6 @@
 import { Injectable, Inject, HttpStatus } from '@nestjs/common';
 import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { DRIZZLE } from '../database.module';
+import { DRIZZLE } from '../database.constants';
 import { items, ItemType } from '../schema';
 import { eq, InferInsertModel } from 'drizzle-orm';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
@@ -59,5 +59,15 @@ export class DrizzleService {
       .from(items);
 
     return result.map((row) => row.type);
+  }
+
+  async getItemType(itemId: string): Promise<ItemType> {
+    const result = await this.db
+      .select({ type: items.type })
+      .from(items)
+      .where(eq(items.detailsId, itemId))
+      .limit(1);
+
+    return result[0]?.type;
   }
 }

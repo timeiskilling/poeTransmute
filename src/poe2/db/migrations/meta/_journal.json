@@ -15,6 +15,20 @@
       "when": 1781873750992,
       "tag": "0001_silky_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782056538979,
+      "tag": "0002_known_rumiko_fujikawa",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782058686038,
+      "tag": "0003_loose_charles_xavier",
+      "breakpoints": true
     }
   ]
 }

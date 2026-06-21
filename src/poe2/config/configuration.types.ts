@@ -3,6 +3,7 @@ export type DatabaseConfig = {
   port: number;
   user: string;
   password?: string;
+  database: string;
   connectionPool: {
     max: number;
   };

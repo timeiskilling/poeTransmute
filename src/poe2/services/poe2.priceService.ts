@@ -5,6 +5,7 @@ import { Poe2Config, RootConfig } from '../config/configuration.types';
 import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
 import { DetailPriceDto } from '../poe2NinjaDto/detailPriceDto';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
+import { treeifyError } from 'zod';
 import {
   Poe2NinjaItemLineResponse,
   Poe2NinjaItemPairResponse,
@@ -39,8 +40,10 @@ export class Poe2PricesService {
       .execute();
   }
 
-  async getPricesForItem(itemId: string, itemsBase: string) {
-    return await runPromiseExecution(this.fetchPricesForItem(itemId, itemsBase))
+  async getPricesForItem(itemId: string, itemsBase: string, itemType: string) {
+    return await runPromiseExecution(
+      this.fetchPricesForItem(itemId, itemsBase, itemType),
+    )
       .catchError(`Err at fetching the date of ${itemId}`)
       .execute();
   }
@@ -85,11 +88,11 @@ export class Poe2PricesService {
   private async fetchPricesForItem(
     itemId: string,
     itemsBase: string,
+    itemType: string,
   ): Promise<Poe2NinjaItemPairResponse> {
     this.logger.log(`Loading data for item: ${itemId}...`);
-
     const poeConfig = this.poeConfig;
-    const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${itemId}&id=${itemId}`;
+    const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${itemType}&id=${itemId}`;
     const randomDelay = Math.random() * 1000;
 
     const response = await withRetry(
@@ -105,8 +108,11 @@ export class Poe2PricesService {
     const parsedData = DetailPriceResponseSchema.safeParse(response.data);
 
     if (!parsedData.success) {
-      this.logger.error(`Invalid API response format for type: ${itemId}`);
-      return { itemId, status: 'error', reason: 'invalid_format' };
+      this.logger.error(
+        `Invalid API response format for type: ${itemType}`,
+        treeifyError(parsedData.error),
+      );
+      return { itemId: itemType, status: 'error', reason: 'invalid_format' };
     }
 
     const rawItems = parsedData.data.pairs;
