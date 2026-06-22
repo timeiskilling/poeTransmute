@@ -11,6 +11,7 @@ import { Poe2PricesService } from '../services/poe2.priceService';
 import { ConfigService } from '@nestjs/config';
 import { Poe2Config, RootConfig } from '../config/configuration.types';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
+import { ItemTypeValidationPipe, type ParsedItemType } from '../pipes';
 
 @Controller('exileItems')
 export class Poe2Controller {
@@ -31,26 +32,20 @@ export class Poe2Controller {
   }
 
   @Get('economy/:type')
-  async getEconomy(@Param('type') type: string) {
-    const isCurrency = (CURRENCY_TYPES as readonly string[]).includes(type);
-
-    const isStash = (STASH_TYPES as readonly string[]).includes(type);
-
-    if (isCurrency) {
+  async getEconomy(
+    @Param('type', ItemTypeValidationPipe) parsedType: ParsedItemType,
+  ) {
+    if (parsedType.isCurrency) {
       return await this.poe2PriceService.getPricesForType(
-        type,
+        parsedType.value,
         this.poeConfig.ninjaExchangeBase,
       );
-    } else if (isStash) {
-      return await this.poe2PriceService.getPricesForType(
-        type,
-        this.poeConfig.ninjaStashBase,
-      );
-    } else {
-      throw new BadRequestException(
-        `Invalid type: ${type}. Must be one of the allowed currency or stash types.`,
-      );
     }
+
+    return await this.poe2PriceService.getPricesForType(
+      parsedType.value,
+      this.poeConfig.ninjaStashBase,
+    );
   }
 
   @Get('history/:itemId')
@@ -61,7 +56,6 @@ export class Poe2Controller {
       .throwIfNullish('Item not found', HttpStatus.NOT_FOUND);
 
     const isCurrency = (CURRENCY_TYPES as readonly string[]).includes(type);
-
     const isStash = (STASH_TYPES as readonly string[]).includes(type);
 
     if (isCurrency) {
