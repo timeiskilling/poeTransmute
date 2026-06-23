@@ -3,18 +3,16 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Poe2Config, RootConfig } from '../config/configuration.types';
 import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
-import { DetailPriceDto } from '../poe2NinjaDto/detailPriceDto';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
-import { treeifyError } from 'zod';
 import {
   Poe2NinjaItemLineResponse,
   Poe2NinjaItemPairResponse,
 } from '../poe2NinjaDto/responseDto';
 import {
-  LineItem,
   LineItemResponseSchema,
   DetailPriceResponseSchema,
 } from '../poe2NinjaDto/zodParser';
+import z from 'zod';
 
 @Injectable()
 export class Poe2PricesService {
@@ -27,6 +25,7 @@ export class Poe2PricesService {
     backoffFactor: 2,
     retryableStatuses: [429, 500, 502, 503, 504],
   };
+
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService<RootConfig>,
@@ -36,7 +35,7 @@ export class Poe2PricesService {
 
   async getPricesForType(type: string, itemsBase: string) {
     return await runPromiseExecution(this.fetchPricesForType(type, itemsBase))
-      .catchError(`Err at fetching the date of ${type}`)
+      .catchError(`Err at fetching the data of ${type}`)
       .execute();
   }
 
@@ -44,7 +43,7 @@ export class Poe2PricesService {
     return await runPromiseExecution(
       this.fetchPricesForItem(itemId, itemsBase, itemType),
     )
-      .catchError(`Err at fetching the date of ${itemId}`)
+      .catchError(`Err at fetching the data of ${itemId}`)
       .execute();
   }
 
@@ -52,37 +51,24 @@ export class Poe2PricesService {
     type: string,
     itemsBase: string,
   ): Promise<Poe2NinjaItemLineResponse> {
-    this.logger.log(`Loading data for type: ${type}...`);
+    const url = `${this.poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(this.poeConfig.league)}&type=${type}`;
 
-    const poeConfig = this.poeConfig;
-    const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${type}`;
-    const randomDelay = Math.random() * 1000;
-
-    const response = await withRetry(
-      () => this.httpService.axiosRef.get<LineItem>(url),
-      {
-        ...this.retryConfig,
-        initialDelayMs: this.retryConfig.initialDelayMs + randomDelay,
-      },
-      this.logger,
-      `Fetch ${type}`,
+    return this.fetchNinjaApi(
+      url,
+      LineItemResponseSchema,
+      `Fetch type ${type}`,
+      (data) => ({
+        type,
+        status: 'success',
+        count: data.lines.length,
+        items: data.lines,
+      }),
+      (reason) => ({
+        type,
+        status: 'error',
+        reason,
+      }),
     );
-
-    const parsedData = LineItemResponseSchema.safeParse(response.data);
-
-    if (!parsedData.success) {
-      this.logger.error(`Invalid API response format for type: ${type}`);
-      return { type, status: 'error', reason: 'invalid_format' };
-    }
-
-    const rawItems = parsedData.data.lines;
-
-    if (!rawItems || rawItems.length === 0) {
-      this.logger.warn(`API returned empty items array for type: ${type}`);
-      return { type, status: 'error', reason: 'empty_data' };
-    }
-
-    return { type, status: 'success', count: rawItems.length, items: rawItems };
   }
 
   private async fetchPricesForItem(
@@ -90,43 +76,61 @@ export class Poe2PricesService {
     itemsBase: string,
     itemType: string,
   ): Promise<Poe2NinjaItemPairResponse> {
-    this.logger.log(`Loading data for item: ${itemId}...`);
-    const poeConfig = this.poeConfig;
-    const url = `${poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(poeConfig.league)}&type=${itemType}&id=${itemId}`;
-    const randomDelay = Math.random() * 1000;
+    const url = `${this.poeConfig.ninjaApiRootUrl}${itemsBase}?league=${encodeURIComponent(this.poeConfig.league)}&type=${itemType}&id=${itemId}`;
 
-    const response = await withRetry(
-      () => this.httpService.axiosRef.get<DetailPriceDto>(url),
-      {
-        ...this.retryConfig,
-        initialDelayMs: this.retryConfig.initialDelayMs + randomDelay,
-      },
-      this.logger,
-      `Fetch ${itemId}`,
+    return this.fetchNinjaApi(
+      url,
+      DetailPriceResponseSchema,
+      `Fetch item ${itemId}`,
+      (data) => ({
+        itemId,
+        status: 'success',
+        count: data.pairs.length,
+        items: data.pairs,
+      }),
+      (reason) => ({
+        itemId,
+        status: 'skipped',
+        reason,
+      }),
     );
+  }
 
-    const parsedData = DetailPriceResponseSchema.safeParse(response.data);
+  private async fetchNinjaApi<
+    Schema extends z.ZodTypeAny,
+    SuccessType,
+    ErrorType,
+  >(
+    url: string,
+    schema: Schema,
+    logContext: string,
+    mapSuccess: (data: z.infer<Schema>) => SuccessType,
+    mapError: (reason: string) => ErrorType,
+  ): Promise<SuccessType | ErrorType> {
+    const randomDelay = Math.random() * 2500;
+    const result = await runPromiseExecution(
+      withRetry(
+        () =>
+          this.httpService.axiosRef
+            .get<z.infer<Schema>>(url)
+            .then((res) => res.data),
+        {
+          ...this.retryConfig,
+          initialDelayMs: this.retryConfig.initialDelayMs + randomDelay,
+        },
+        this.logger,
+        logContext,
+      ),
+    )
+      .catchError(`Network or Server error at ${logContext}`)
+      .validate(schema, 'invalid_format')
+      .executeSafeResult();
 
-    if (!parsedData.success) {
-      this.logger.error(
-        `Invalid API response format for type: ${itemType}`,
-        treeifyError(parsedData.error),
-      );
-      return { itemId: itemType, status: 'error', reason: 'invalid_format' };
+    if (result.status === 'error') {
+      this.logger.error(`Failed to process ${logContext}: ${result.reason}`);
+      return mapError(result.reason);
     }
 
-    const rawItems = parsedData.data.pairs;
-
-    if (!rawItems || rawItems.length === 0) {
-      this.logger.warn(`API returned empty items array for item: ${itemId}`);
-      return { itemId, status: 'skipped', reason: 'empty_data' };
-    }
-
-    return {
-      itemId,
-      status: 'success',
-      count: rawItems.length,
-      items: rawItems,
-    };
+    return mapSuccess(result.data);
   }
 }

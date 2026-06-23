@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { ItemType, Poe2NinjaItemInsert } from '../db/schema';
 
+export type SafeResult<T> =
+  | { status: 'success'; data: T }
+  | { status: 'error'; reason: string; details?: unknown };
+
 export const SparklineSchema = z.object({
   totalChange: z.number().nullable().optional(),
   data: z.array(z.number()).nullable().optional(),
@@ -35,11 +39,11 @@ export const PairSchema = z.object({
 });
 
 export const DetailPriceResponseSchema = z.object({
-  pairs: z.array(PairSchema),
+  pairs: z.array(PairSchema).min(1, { message: 'empty_data' }),
 });
 
 export const LineItemResponseSchema = z.object({
-  lines: z.array(LineSchema),
+  lines: z.array(LineSchema).min(1, { message: 'empty_data' }),
 });
 
 export type Sparkline = z.infer<typeof SparklineSchema>;

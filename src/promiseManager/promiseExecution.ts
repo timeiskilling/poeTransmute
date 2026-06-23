@@ -1,5 +1,6 @@
 import { HttpStatus, HttpException, Logger } from '@nestjs/common';
-
+import { treeifyError, z } from 'zod';
+import { SafeResult } from 'src/poe2/poe2NinjaDto/zodParser';
 export interface UnsafeExecution<T> {
   catchError(errorMessage: string, status?: HttpStatus): SafeExecution<T>;
 }
@@ -10,10 +11,24 @@ export interface SafeExecution<T> {
     status?: HttpStatus,
   ): Promise<NonNullable<T>>;
   throwIfEmptyArray(errorMessage?: string, status?: HttpStatus): Promise<T>;
+  validate<Schema extends z.ZodTypeAny>(
+    schema: Schema,
+    errorMessage?: string,
+    status?: HttpStatus,
+  ): SafeExecution<z.infer<Schema>>;
   execute(): Promise<T>;
+  executeSafeResult(): Promise<SafeResult<T>>;
 }
 
-export interface SafePromisesExecution<T> extends SafeExecution<T[]> {
+export interface SafePromisesExecution<T> extends Omit<
+  SafeExecution<T[]>,
+  'validate'
+> {
+  validate<Schema extends z.ZodTypeAny>(
+    schema: Schema,
+    errorMessage?: string,
+    status?: HttpStatus,
+  ): SafePromisesExecution<z.infer<Schema>>;
   executeAllSettled(errorMessage?: string, status?: HttpStatus): Promise<T[]>;
 }
 
@@ -33,6 +48,35 @@ class PromiseExecutionWrapper<T>
 
   static start<T>(promise: Promise<T>): UnsafeExecution<T> {
     return new PromiseExecutionWrapper(promise);
+  }
+
+  validate<Schema extends z.ZodTypeAny>(
+    schema: Schema,
+    errorMessage: string = 'Validation failed',
+    status: HttpStatus = HttpStatus.UNPROCESSABLE_ENTITY,
+  ): SafeExecution<z.infer<Schema>> {
+    const validatedPromise = this.promise.then((result) => {
+      const parsed = schema.safeParse(result);
+
+      if (!parsed.success) {
+        this.logger.error(
+          `Validation error: ${errorMessage}`,
+          treeifyError(parsed.error),
+        );
+        throw new HttpException(
+          {
+            errorMessage,
+            status,
+            details: parsed.error.issues,
+          },
+          status,
+        );
+      }
+
+      return parsed.data;
+    });
+
+    return new PromiseExecutionWrapper(validatedPromise);
   }
 
   catchError(
@@ -74,6 +118,35 @@ class PromiseExecutionWrapper<T>
   async execute(): Promise<T> {
     return this.promise;
   }
+
+  async executeSafeResult(): Promise<SafeResult<T>> {
+    try {
+      const data = await this.promise;
+      return { status: 'success', data };
+    } catch (error: unknown) {
+      let reason = 'unknown_error';
+      let details: unknown = null;
+
+      if (error instanceof HttpException) {
+        const response = error.getResponse();
+
+        if (typeof response === 'object' && response !== null) {
+          const resObj = response as Record<string, unknown>;
+
+          if (typeof resObj.errorMessage === 'string') {
+            reason = resObj.errorMessage;
+          }
+          if (resObj.details !== undefined) {
+            details = resObj.details;
+          }
+        }
+      } else if (error instanceof Error) {
+        reason = error.message;
+      }
+
+      return { status: 'error', reason, details };
+    }
+  }
 }
 
 export class PromisesExecutionWrapperBuilder<T>
@@ -83,6 +156,27 @@ export class PromisesExecutionWrapperBuilder<T>
 
   private constructor(promises: Promise<T>[]) {
     this.promises = promises;
+  }
+
+  validate<Schema extends z.ZodTypeAny>(
+    schema: Schema,
+    errorMessage: string = 'Validation failed for one or more items',
+    status: HttpStatus = HttpStatus.UNPROCESSABLE_ENTITY,
+  ): SafePromisesExecution<z.infer<Schema>> {
+    const validatedPromises = this.promises.map((promise) =>
+      promise.then((result) => {
+        const parsed = schema.safeParse(result);
+        if (!parsed.success) {
+          throw new HttpException(
+            { errorMessage, status, details: parsed.error.issues },
+            status,
+          );
+        }
+        return parsed.data;
+      }),
+    );
+
+    return new PromisesExecutionWrapperBuilder(validatedPromises);
   }
 
   static start<T>(promises: Promise<T>[]): UnsafePromisesExecution<T> {
@@ -132,6 +226,33 @@ export class PromisesExecutionWrapperBuilder<T>
 
   async execute(): Promise<T[]> {
     return Promise.all(this.promises);
+  }
+
+  async executeSafeResult(): Promise<SafeResult<T[]>> {
+    try {
+      const data = await Promise.all(this.promises);
+      return { status: 'success', data };
+    } catch (error: unknown) {
+      let reason = 'unknown_error';
+      let details: unknown = null;
+
+      if (error instanceof HttpException) {
+        const response = error.getResponse();
+        if (typeof response === 'object' && response !== null) {
+          const resObj = response as Record<string, unknown>;
+          if (typeof resObj.errorMessage === 'string') {
+            reason = resObj.errorMessage;
+          }
+          if (resObj.details !== undefined) {
+            details = resObj.details;
+          }
+        }
+      } else if (error instanceof Error) {
+        reason = error.message;
+      }
+
+      return { status: 'error', reason, details };
+    }
   }
 
   async executeAllSettled(
