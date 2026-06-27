@@ -4,17 +4,17 @@ const PropertySchema = z.looseObject({
   name: z.string(),
   values: z.array(z.tuple([z.string(), z.number()])),
   displayMode: z.number(),
-  type: z.number().optional(),
-  suffix: z.string().optional(),
-  icon: z.string().optional(),
+  type: z.number().nullish(),
+  suffix: z.string().nullish(),
+  icon: z.string().nullish(),
 });
 
 const RequirementSchema = z.looseObject({
   name: z.string(),
   values: z.array(z.tuple([z.string(), z.number()])),
   displayMode: z.number(),
-  type: z.number().optional(),
-  suffix: z.string().optional(),
+  type: z.number().nullish(),
+  suffix: z.string().nullish(),
 });
 
 const SocketSchema = z.looseObject({
@@ -24,13 +24,13 @@ const SocketSchema = z.looseObject({
 
 const GemPageSchema = z.looseObject({
   skillName: z.string(),
-  stats: z.array(z.string()).optional(),
-  properties: z.array(PropertySchema).optional(),
-  description: z.string().optional(),
+  stats: z.array(z.string()).nullish(),
+  properties: z.array(PropertySchema).nullish(),
+  description: z.string().nullish(),
 });
 
 const GemTabSchema = z.looseObject({
-  name: z.string().optional(),
+  name: z.string().nullish(),
   pages: z.array(GemPageSchema),
 });
 
@@ -40,19 +40,19 @@ const ModSchema = z.looseObject({
 });
 
 const StructuredModsSchema = z.looseObject({
-  implicit: z.array(ModSchema).optional(),
-  explicit: z.array(ModSchema).optional(),
-  fractured: z.array(ModSchema).optional(),
-  crafted: z.array(ModSchema).optional(),
-  enchant: z.array(ModSchema).optional(),
-  desecrated: z.array(ModSchema).optional(),
+  implicit: z.array(ModSchema).nullish(),
+  explicit: z.array(ModSchema).nullish(),
+  fractured: z.array(ModSchema).nullish(),
+  crafted: z.array(ModSchema).nullish(),
+  enchant: z.array(ModSchema).nullish(),
+  desecrated: z.array(ModSchema).nullish(),
 });
 
 const GrantedSkillSchema = z.looseObject({
   name: z.string(),
   values: z.array(z.tuple([z.string(), z.number()])),
   displayMode: z.number(),
-  icon: z.string().optional(),
+  icon: z.string().nullish(),
 });
 
 const SupportGemSchema = z.looseObject({
@@ -60,8 +60,8 @@ const SupportGemSchema = z.looseObject({
   name: z.string(),
   typeLine: z.string(),
   support: z.boolean(),
-  properties: z.array(PropertySchema),
-  requirements: z.array(RequirementSchema),
+  properties: z.array(PropertySchema).nullish(),
+  requirements: z.array(RequirementSchema).nullish(),
 });
 
 const SocketedItemSchema = z.looseObject({
@@ -70,23 +70,23 @@ const SocketedItemSchema = z.looseObject({
   typeLine: z.string(),
   baseType: z.string(),
   support: z.boolean(),
-  properties: z.array(PropertySchema),
-  requirements: z.array(RequirementSchema),
-  gemTabs: z.array(GemTabSchema).optional(),
-  level: z.number().optional(),
-  qualityProperty: z.number().optional(),
+  properties: z.array(PropertySchema).nullish(),
+  requirements: z.array(RequirementSchema).nullish(),
+  gemTabs: z.array(GemTabSchema).nullish(),
+  level: z.number().nullish(),
+  qualityProperty: z.number().nullish(),
 });
 
 const GemItemSchema = z.looseObject({
   name: z.string(),
   typeLine: z.string(),
   support: z.boolean(),
-  gemTabs: z.array(GemTabSchema).optional(),
-  gemSkill: z.string().optional(),
-  properties: z.array(PropertySchema),
-  requirements: z.array(RequirementSchema),
-  sockets: z.array(SocketSchema),
-  socketedItems: z.array(SupportGemSchema),
+  gemTabs: z.array(GemTabSchema).nullish(),
+  gemSkill: z.string().nullish(),
+  properties: z.array(PropertySchema).nullish(),
+  requirements: z.array(RequirementSchema).nullish(),
+  sockets: z.array(SocketSchema).nullish(),
+  socketedItems: z.array(SupportGemSchema).nullish(),
 });
 
 const GemSchema = z.looseObject({
@@ -106,13 +106,13 @@ const SkillDpsSchema = z.looseObject({
 });
 
 const SkillSchema = z.looseObject({
-  allGems: z.array(GemSchema),
-  dps: z.array(SkillDpsSchema),
+  allGems: z.array(GemSchema).nullish(),
+  dps: z.array(SkillDpsSchema).nullish(),
 });
 
 const ItemSchema = z.looseObject({
-  id: z.string().optional(),
-  inventoryId: z.string().optional(),
+  id: z.string().nullish(),
+  inventoryId: z.string().nullish(),
   name: z.string(),
   typeLine: z.string(),
   baseType: z.string(),
@@ -122,8 +122,8 @@ const ItemSchema = z.looseObject({
   icon: z.string(),
   w: z.number(),
   h: z.number(),
-  x: z.number().optional(),
-  y: z.number().optional(),
+  x: z.number().nullish(),
+  y: z.number().nullish(),
   league: z.string(),
   realm: z.string(),
   identified: z.boolean(),
@@ -135,37 +135,37 @@ const ItemSchema = z.looseObject({
   support: z.boolean(),
   replica: z.boolean(),
   verified: z.boolean(),
-  rarity: z.string().optional(),
-  stackSize: z.number().optional(),
-  maxStackSize: z.number().optional(),
-  qualityProperty: z.number().optional(),
-  iconTierText: z.string().optional(),
-  socketedIcon: z.string().optional(),
-  descrText: z.string().optional(),
-  secDescrText: z.string().optional(),
-  flavourText: z.array(z.string()).optional(),
-  sockets: z.array(SocketSchema),
-  socketedItems: z.array(SocketedItemSchema),
-  grantedSkills: z.array(GrantedSkillSchema),
-  properties: z.array(PropertySchema),
-  additionalProperties: z.array(PropertySchema),
-  requirements: z.array(RequirementSchema),
-  implicitMods: z.array(z.string()),
-  explicitMods: z.array(z.string()),
-  fracturedMods: z.array(z.string()),
-  craftedMods: z.array(z.string()),
-  enchantMods: z.array(z.string()),
-  runeMods: z.array(z.string()),
-  bondedMods: z.array(z.string()),
-  desecratedMods: z.array(z.string()),
-  mutatedMods: z.array(z.string()),
-  utilityMods: z.array(z.string()),
-  mods: StructuredModsSchema.optional(),
-  gemTabs: z.array(GemTabSchema).optional(),
-  gemSkill: z.string().optional(),
-  gemSockets: z.array(z.string()).optional(),
-  weaponRequirements: z.array(RequirementSchema).optional(),
-  supportGemRequirements: z.array(RequirementSchema).optional(),
+  rarity: z.string().nullish(),
+  stackSize: z.number().nullish(),
+  maxStackSize: z.number().nullish(),
+  qualityProperty: z.number().nullish(),
+  iconTierText: z.string().nullish(),
+  socketedIcon: z.string().nullish(),
+  descrText: z.string().nullish(),
+  secDescrText: z.string().nullish(),
+  flavourText: z.array(z.string()).nullish(),
+  sockets: z.array(SocketSchema).nullish(),
+  socketedItems: z.array(SocketedItemSchema).nullish(),
+  grantedSkills: z.array(GrantedSkillSchema).nullish(),
+  properties: z.array(PropertySchema).nullish(),
+  additionalProperties: z.array(PropertySchema).nullish(),
+  requirements: z.array(RequirementSchema).nullish(),
+  implicitMods: z.array(z.string()).nullish(),
+  explicitMods: z.array(z.string()).nullish(),
+  fracturedMods: z.array(z.string()).nullish(),
+  craftedMods: z.array(z.string()).nullish(),
+  enchantMods: z.array(z.string()).nullish(),
+  runeMods: z.array(z.string()).nullish(),
+  bondedMods: z.array(z.string()).nullish(),
+  desecratedMods: z.array(z.string()).nullish(),
+  mutatedMods: z.array(z.string()).nullish(),
+  utilityMods: z.array(z.string()).nullish(),
+  mods: StructuredModsSchema.nullish(),
+  gemTabs: z.array(GemTabSchema).nullish(),
+  gemSkill: z.string().nullish(),
+  gemSockets: z.array(z.string()).nullish(),
+  weaponRequirements: z.array(RequirementSchema).nullish(),
+  supportGemRequirements: z.array(RequirementSchema).nullish(),
 });
 
 const EquipmentSchema = z.looseObject({
@@ -196,7 +196,7 @@ const DamageReductionSchema = z.looseObject({
 });
 
 const DamageReductionsSchema = z.looseObject({
-  physical: DamageReductionSchema.optional(),
+  physical: DamageReductionSchema.nullish(),
 });
 
 const PhysicalTakenAsSchema = z.looseObject({
@@ -274,7 +274,7 @@ export const PoeNinjaApiResponseSchema = z.looseObject({
   level: z.number(),
   class: z.string(),
   baseClass: z.number(),
-  pathOfBuildingExport: z.string().optional(),
+  pathOfBuildingExport: z.string().nullish(),
   defensiveStats: DefensiveStatsSchema,
   breakdowns: BreakdownsSchema,
   skills: z.array(SkillSchema),

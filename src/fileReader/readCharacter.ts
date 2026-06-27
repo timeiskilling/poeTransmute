@@ -1,29 +1,36 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
 import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
 import { PoeNinjaApiResponseSchema } from 'src/poe2/poe2NinjaDto/characterNinjaZodSchema';
 import Bun from 'bun';
-import { PoeNinjaAdapter } from 'src/poe2/adapters/PoeNinjaAdapter';
 
 export async function readCharacter(filePath: string) {
   const file = Bun.file(filePath);
 
   if (!(await file.exists())) {
-    return { status: 'error', reason: "File doesn't exist", details: null };
+    throw new HttpException(
+      `File doesn't exist: ${filePath}`,
+      HttpStatus.NOT_FOUND,
+    );
   }
+  const parsePromise = file.json().then((res: unknown) => {
+    if (res && typeof res === 'object' && 'charModel' in res) {
+      return res.charModel;
+    }
 
-  const validationResult = await runPromiseExecution(file.json())
-    .catchError(`Error parsing JSON at path: ${filePath}`)
-    .validate(PoeNinjaApiResponseSchema, 'Invalid poe.ninja format')
-    .executeSafeResult();
+    throw new Error('Local JSON does not contain object charModel');
+  });
 
-  if (validationResult.status === 'error') {
-    return validationResult;
-  }
+  const validationResult = await runPromiseExecution(parsePromise)
+    .catchError(
+      `Error parsing JSON at path: ${filePath}`,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    )
+    .validate(
+      PoeNinjaApiResponseSchema,
+      'Invalid poe.ninja format',
+      HttpStatus.UNPROCESSABLE_ENTITY,
+    )
+    .execute();
 
-  const adapter = new PoeNinjaAdapter(validationResult.data);
-  const cleanProfile = adapter.getNormalizedProfile();
-
-  return {
-    status: 'success',
-    data: cleanProfile,
-  };
+  return validationResult;
 }

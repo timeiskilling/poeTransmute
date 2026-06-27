@@ -31,14 +31,14 @@ export class PoeNinjaAdapter implements ICharacterAdapter {
 
       mainSkills: this.extractMainSkills(),
       completedQuestRewards: this.rawData.questStats || [],
-      pobExportString: this.rawData.pathOfBuildingExport,
+      pobExportString: this.rawData.pathOfBuildingExport ?? undefined,
     };
   }
 
   private extractMainSkills() {
     const skills = [];
     for (const skillGroup of this.rawData.skills) {
-      for (const dpsEntry of skillGroup.dps) {
+      for (const dpsEntry of skillGroup.dps || []) {
         if (dpsEntry.dps > 0) {
           skills.push({
             name: dpsEntry.name,

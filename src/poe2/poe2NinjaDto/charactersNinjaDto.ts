@@ -8,7 +8,6 @@ export interface PoeNinjaCharacterDto {
   baseClass: number;
 
   pathOfBuildingExport?: string;
-
   defensiveStats: PoeNinjaDefensiveStatsDto;
   breakdowns: PoeNinjaBreakdownsDto;
 
