@@ -63,3 +63,6 @@ This document outlines the step-by-step development process for building a custo
 - [ ] Render the Calculation Delta dynamically in the UI:
   - Display positive changes in green (e.g., `+1200 EHP`, `+500 DPS`).
   - Display negative changes or warnings in red (e.g., `-5% Fire Resistance (Not Capped)`).
+
+
+rednder the poe 2 tree
