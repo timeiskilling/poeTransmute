@@ -65,4 +65,4 @@ This document outlines the step-by-step development process for building a custo
   - Display negative changes or warnings in red (e.g., `-5% Fire Resistance (Not Capped)`).
 
 
-rednder the poe 2 tree
+- [ ] rednder the poe 2 tree Confirmed
