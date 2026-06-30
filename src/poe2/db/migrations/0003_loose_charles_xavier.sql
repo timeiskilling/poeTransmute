@@ -1,4 +1,0 @@
-ALTER TABLE "items" ALTER COLUMN "type" SET DATA TYPE text;--> statement-breakpoint
-DROP TYPE "public"."item_type";--> statement-breakpoint
-CREATE TYPE "public"."item_type" AS ENUM('Currency', 'Breach', 'Abyss', 'Expedition', 'Ritual', 'Delirium', 'Runes', 'UncutGems', 'Essences', 'LineageSupportGems', 'SoulCores', 'Fragments', 'Idols', 'UniqueWeapons', 'UniqueArmours', 'UniqueAccessories', 'UniqueFlasks', 'UniqueCharms', 'UniqueJewels', 'UniqueSanctumRelics', 'UniqueTablets');--> statement-breakpoint
-ALTER TABLE "items" ALTER COLUMN "type" SET DATA TYPE "public"."item_type" USING "type"::"public"."item_type";
