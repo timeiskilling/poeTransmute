@@ -1,0 +1,118 @@
+{
+  "id": "9d679ace-1779-4812-9537-3736cefb621b",
+  "prevId": "4ee5a92c-8c06-4faf-aa21-2ee32f3c1e0d",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.items": {
+      "name": "items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "type": {
+          "name": "type",
+          "type": "currency_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detailsId": {
+          "name": "detailsId",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.currency_type": {
+      "name": "currency_type",
+      "schema": "public",
+      "values": [
+        "Currency",
+        "Breach",
+        "Abyss",
+        "Expedition",
+        "Ritual",
+        "Delirium",
+        "Runes",
+        "UncutGems",
+        "Essences",
+        "LineageSupportGems",
+        "SoulCores",
+        "Fragments",
+        "Idols"
+      ]
+    },
+    "public.stash_type": {
+      "name": "stash_type",
+      "schema": "public",
+      "values": [
+        "UniqueWeapon",
+        "UniqueArmour",
+        "UniqueAccessory",
+        "UniqueFlask",
+        "UniqueCharm",
+        "UniqueJewel",
+        "UniqueRelic",
+        "UniqueTablet"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
