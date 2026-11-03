@@ -61,7 +61,7 @@ export class DrizzleService {
     return result.map((row) => row.type);
   }
 
-  async getItemType(itemId: string): Promise<ItemType> {
+  async getItemType(itemId: string): Promise<ItemType | undefined> {
     const result = await this.db
       .select({ type: items.type })
       .from(items)

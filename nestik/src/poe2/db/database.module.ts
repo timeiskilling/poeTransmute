@@ -19,11 +19,7 @@ import { HttpModule } from '@nestjs/axios';
       provide: DRIZZLE,
       inject: [ConfigService],
       useFactory: async (configService: ConfigService<RootConfig>) => {
-        const dbConfig = configService.get('database', { infer: true });
-
-        if (!dbConfig) {
-          throw new Error('Database configuration is missing');
-        }
+        const dbConfig = configService.getOrThrow('database', { infer: true });
 
         console.log('--- DB CONFIG CHECK ---');
         console.log('Target Database:', dbConfig.database);
@@ -35,19 +31,17 @@ import { HttpModule } from '@nestjs/axios';
           );
         }
 
+        const { connectionPool, ...connection } = dbConfig;
         const queryClient = postgres({
-          host: dbConfig.host,
-          port: dbConfig.port,
-          username: dbConfig.user,
-          password: dbConfig.password,
-          database: dbConfig.database,
-          max: dbConfig.connectionPool.max,
+          ...connection,
+          max: connectionPool.max,
         });
 
         try {
           await queryClient`SELECT 1`;
         } catch (error) {
           console.error('Failed to connect to the database on startup');
+          await queryClient.end();
           throw error;
         }
         return drizzle(queryClient, { schema });

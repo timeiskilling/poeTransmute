@@ -1,12 +1,6 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  HttpStatus,
-  Param,
-} from '@nestjs/common';
+import { Controller, Get, HttpStatus, Param } from '@nestjs/common';
 import { DrizzleService } from '../db/service/drizzleService';
-import { CURRENCY_TYPES, STASH_TYPES } from '../db/schema';
+import { CURRENCY_TYPES } from '../db/schema';
 import { Poe2PricesService } from '../services/poe2.priceService';
 import { ConfigService } from '@nestjs/config';
 import { Poe2Config, RootConfig } from '../config/configuration.types';
@@ -52,28 +46,17 @@ export class Poe2Controller {
   async getHistory(@Param('itemId') itemId: string) {
     const promise = this.drizzleService.getItemType(itemId);
     const type = await runPromiseExecution(promise)
-      .catchError('Failed serch item type')
+      .catchError('Failed to search item type')
       .throwIfNullish('Item not found', HttpStatus.NOT_FOUND);
 
     const isCurrency = (CURRENCY_TYPES as readonly string[]).includes(type);
-    const isStash = (STASH_TYPES as readonly string[]).includes(type);
 
-    if (isCurrency) {
-      return await this.poe2PriceService.getPricesForItem(
-        itemId,
-        this.poeConfig.ninjaExchangeItemHistory,
-        type,
-      );
-    } else if (isStash) {
-      return await this.poe2PriceService.getPricesForItem(
-        itemId,
-        this.poeConfig.ninjaStashItemHistory,
-        type,
-      );
-    } else {
-      throw new BadRequestException(
-        `Invalid type: ${type}. Must be one of the allowed currency or stash types.`,
-      );
-    }
+    return await this.poe2PriceService.getPricesForItem(
+      itemId,
+      isCurrency
+        ? this.poeConfig.ninjaExchangeItemHistory
+        : this.poeConfig.ninjaStashItemHistory,
+      type,
+    );
   }
 }

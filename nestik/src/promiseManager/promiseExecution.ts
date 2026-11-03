@@ -1,6 +1,7 @@
 import { HttpStatus, HttpException, Logger } from '@nestjs/common';
 import { treeifyError, z } from 'zod';
 import { SafeResult } from 'src/poe2/poe2NinjaDto/zodParser';
+
 export interface UnsafeExecution<T> {
   catchError(errorMessage: string, status?: HttpStatus): SafeExecution<T>;
 }
