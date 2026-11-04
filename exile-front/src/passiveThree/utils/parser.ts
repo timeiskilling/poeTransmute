@@ -11,15 +11,7 @@ import {
 } from "../types";
 
 export interface ParseTreeOptions {
-  /**
-   * Internal id: "Witch1", "Monk2", "Warrior3".
-   * Також підтримується display name із classes[].ascendancies[].name.
-   */
   activeAscendancyId?: string;
-
-  /**
-   * За замовчуванням true.
-   */
   centerActiveAscendancy?: boolean;
 }
 
@@ -92,10 +84,6 @@ export function parseTreeData(
     options.activeAscendancyId,
   );
 
-  /*
-   * Base tree залишається завжди.
-   * Для ascendancy додаємо лише ноди активного panel.
-   */
   for (const [rawKey, rawNode] of Object.entries(treeData.nodes)) {
     const node = createTreeNode(
       rawKey,
@@ -118,20 +106,8 @@ export function parseTreeData(
     nodes.set(node.id, node);
   }
 
-  /*
-   * mainBounds завжди без ascendancy.
-   * Використовується Camera.fitToBounds() на старті.
-   */
   const mainBounds = getBounds(nodes, shouldIncludeInMainBounds);
 
-  /*
-   * Toolkit placement:
-   *
-   * worldAnchor = ascendancyStart + offsetX/Y
-   * translation = hubCenter - worldAnchor
-   *
-   * Hub GGG дерева лежить у world point 0, 0.
-   */
   const translation =
     activeAscendancy && options.centerActiveAscendancy !== false
       ? createAscendancyTranslation(nodes, activeAscendancy)
@@ -189,7 +165,7 @@ export function parseTreeData(
         index: metadata?.index ?? -1,
         from: source.id,
         to: target.id,
-        orbit: metadata?.orbit ?? source.orbit, 
+        orbit: metadata?.orbit ?? source.orbit,
         arcCenter: getTranslatedArcCenter(
           arcCenter,
           source,
@@ -351,9 +327,6 @@ function resolveActiveAscendancy(
       }
     }
 
-    /*
-     * Старі або неповні exports можуть не мати classes metadata.
-     */
     return {
       internalId: requestedId,
       offsetX: 0,
@@ -554,11 +527,6 @@ function createEdgeMetadata(
       continue;
     }
 
-    /*
-     * Важливо:
-     * raw top-level edges без orbitX/orbitY не створюють arc.
-     * Тоді renderer малює просту лінію.
-     */
     const arcCenter =
       isFiniteNumber(edge.orbitX) && isFiniteNumber(edge.orbitY)
         ? {
@@ -603,10 +571,6 @@ function shouldRenderEdge(source: TreeNode, target: TreeNode): boolean {
     return false;
   }
 
-  /*
-   * Panel — окрема relocated geometry.
-   * Rails між main tree і ascendancy не малюємо.
-   */
   if (source.isAscendancy !== target.isAscendancy) {
     return false;
   }
