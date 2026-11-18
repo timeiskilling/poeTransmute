@@ -4,7 +4,7 @@ import { CURRENCY_TYPES } from '../db/schema';
 import { Poe2PricesService } from '../services/poe2.priceService';
 import { ConfigService } from '@nestjs/config';
 import { Poe2Config, RootConfig } from '../config/configuration.types';
-import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
+import { runPromiseExecution } from '../../promiseManager/promiseExecution';
 import { ItemTypeValidationPipe, type ParsedItemType } from '../pipes';
 
 @Controller('exileItems')

@@ -3,9 +3,9 @@ import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { DRIZZLE } from '../database.constants';
 import { items, ItemType } from '../schema';
 import { eq, InferInsertModel } from 'drizzle-orm';
-import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
 import { asc, desc, Column, InferSelectModel } from 'drizzle-orm';
 import * as schema from '../schema';
+import { runPromiseExecution } from '../../../promiseManager/promiseExecution';
 
 @Injectable()
 export class DrizzleService {

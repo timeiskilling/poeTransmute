@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Poe2Config, RootConfig } from '../config/configuration.types';
-import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
-import { runPromiseExecution } from 'src/promiseManager/promiseExecution';
+import { RetryOptions, withRetry } from '../../promiseManager/retry.helper';
+import { runPromiseExecution } from '../../promiseManager/promiseExecution';
 import {
   Poe2NinjaItemLineResponse,
   Poe2NinjaItemPairResponse,

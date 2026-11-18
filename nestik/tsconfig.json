@@ -21,6 +21,6 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["bun"],
+    "types": ["bun","jest"],
   },
 }

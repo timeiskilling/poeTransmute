@@ -3,12 +3,12 @@ import { HttpService } from '@nestjs/axios';
 import { DrizzleService } from './drizzleService';
 import * as schema from '../schema';
 import { ConfigService } from '@nestjs/config';
-import { RootConfig } from 'src/poe2/config/configuration.types';
+import { RootConfig } from '../../../poe2/config/configuration.types';
 import { ItemType, Poe2NinjaItemInsert } from '../schema';
-import { runPromisesExecution } from 'src/promiseManager/promiseExecution';
-import { RetryOptions, withRetry } from 'src/promiseManager/retry.helper';
-import { createItemParser } from 'src/poe2/poe2NinjaDto/zodParser';
-import { PoeNinjaDynamicResponse } from 'src/poe2/poe2NinjaDto/responseDto';
+import { runPromisesExecution } from '../../../promiseManager/promiseExecution';
+import { RetryOptions, withRetry } from '../../../promiseManager/retry.helper';
+import { createItemParser } from '../../../poe2/poe2NinjaDto/zodParser';
+import { PoeNinjaDynamicResponse } from '../../../poe2/poe2NinjaDto/responseDto';
 
 @Injectable()
 export class InitializeService implements OnModuleInit {
